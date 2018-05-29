@@ -396,5 +396,3 @@ def info_sort(func, sql_command, *args, **kwargs):
 	ranking = sorted(ranking, key=lambda ranking: ranking[1], reverse=True)
 	conn.close()
 	return ranking
-
-print(info_sort(assertividade_parlamentar, SQL_PARLAMENTAR_SORT))
