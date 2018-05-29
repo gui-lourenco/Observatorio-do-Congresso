@@ -1,4 +1,4 @@
-# Versão 1.0.1
+# Versão 1.1.1
 import sqlite3 as sql
 import scipy.stats as st
 from matplotlib import pyplot as pp
@@ -217,9 +217,11 @@ def votacoes_periodo(passo = 'D', data_in = DATA_INICIAL, data_fim = DATA_FIM):
 		FROM votacao
 		WHERE date(dataHorainicio) >= '{}' AND
 			date(dataHorainicio) <= '{}'
-		GROUP BY date(dataHorainicio);
+		GROUP BY date(dataHorainicio)
+		ORDER BY date(dataHoraInicio);
 	'''
 		res = cursor.execute(sql_command.format(data_in,data_fim)).fetchall()
+		res = [list(x) for x in res]
 		conn.close()
 		return res
 
@@ -229,21 +231,25 @@ def votacoes_periodo(passo = 'D', data_in = DATA_INICIAL, data_fim = DATA_FIM):
 			FROM votacao 
 			WHERE date(dataHorainicio) >= '{}' AND
 				date(dataHorainicio) <= '{}'
-			GROUP BY tmp;
+			GROUP BY tmp
+			ORDER BY date(dataHoraInicio);
 		'''	
 		res = cursor.execute(sql_command.format(data_in,data_fim)).fetchall()
+		res = [list(x) for x in res]
 		conn.close()
 		return res
 
 	elif passo == 'A':	
 		sql_command = '''
 			SELECT strftime('%Y', dataHoraInicio) as tmp, count(*) as cnt 
-			FR2OM votacao 
+			FROM votacao 
 			WHERE date(dataHorainicio) >= '{}' AND
 				date(dataHorainicio) <= '{}'
-			GROUP BY tmp;
+			GROUP BY tmp
+			ORDER BY date(dataHoraInicio);
 		'''	
 		res = cursor.execute(sql_command.format(data_in,data_fim)).fetchall()
+		res = [list(x) for x in res]
 		conn.close()
 		return res
 
@@ -258,9 +264,11 @@ def materias_periodo(passo = 'D', data_in = DATA_INICIAL, data_fim = DATA_FIM):
 		FROM materia
 		WHERE date(data_apresentacao) >= '{}' AND
 			date(data_apresentacao) <= '{}'
-		GROUP BY tmp;
+		GROUP BY tmp
+		ORDER BY date(dataHoraInicio);
 	'''
 		res = cursor.execute(sql_command.format(data_in,data_fim)).fetchall()
+		res = [list(x) for x in res]
 		conn.close()
 		return res
 
@@ -270,9 +278,11 @@ def materias_periodo(passo = 'D', data_in = DATA_INICIAL, data_fim = DATA_FIM):
 			FROM materia 
 			WHERE date(data_apresentacao) >= '{}' AND
 				date(data_apresentacao) <= '{}'
-			GROUP BY tmp;
+			GROUP BY tmp
+			ORDER BY date(dataHoraInicio);
 		'''	
 		res = cursor.execute(sql_command.format(data_in,data_fim)).fetchall()
+		res = [list(x) for x in res]
 		conn.close()
 		return res
 
@@ -282,9 +292,11 @@ def materias_periodo(passo = 'D', data_in = DATA_INICIAL, data_fim = DATA_FIM):
 			FROM materia 
 			WHERE date(data_apresentacao) >= '{}' AND
 				date(data_apresentacao) <= '{}'
-			GROUP BY tmp;
+			GROUP BY tmp
+			ORDER BY date(dataHoraInicio);
 		'''	
 		res = cursor.execute(sql_command.format(data_in,data_fim)).fetchall()
+		res = [list(x) for x in res]
 		conn.close()
 		return res
 
@@ -377,10 +389,12 @@ def info_sort(func, sql_command, *args, **kwargs):
 	infos = cursor.execute(sql_command.format(*args)).fetchall()
 	for info in infos:
 		key = call(func, info[0], **kwargs)
-		key = (info[0], key)
+		key = [info[0], key]
 		ranking.append(key)
 
 	ranking = clean(ranking, 1)
 	ranking = sorted(ranking, key=lambda ranking: ranking[1], reverse=True)
 	conn.close()
 	return ranking
+
+print(info_sort(assertividade_parlamentar, SQL_PARLAMENTAR_SORT))
