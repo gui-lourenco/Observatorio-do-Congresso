@@ -1,41 +1,41 @@
-# Versão 1.1.1
+# Versão 1.1.2
 import sqlite3 as sql
 import scipy.stats as st
 from matplotlib import pyplot as pp
 import numpy as np
 import time
 
-# Funções Estatisticas
 # CONST GLOBAIS DE TEMPO
 data_atual = time.localtime()[0:3]
-DATA_INICIAL = '2010-02-24'
-DATA_FIM = '{}-{}-{}'.format(data_atual[0], data_atual[1], data_atual[2])
-SQL_VOTACAO_SORT = '''
+# Dicionario com as variáveis globais
+global_keys = dict()
+global_keys['DATA_INICIO'] = '2010-02-24'
+global_keys['DATA_FIM'] = '{}-{}-{}'.format(data_atual[0], data_atual[1], data_atual[2])
+global_keys['SQL_VOTACAO_SORT'] = '''
 	SELECT id_votacao
 	FROM votacao
 	WHERE date(dataHoraInicio) >= '{}'
 	AND date(dataHoraInicio) <= '{}';
 '''
-SQL_PARLAMENTAR_SORT = '''
+global_keys['SQL_PARLAMENTAR_SORT'] = '''
 	SELECT id_parlamentar
 	FROM parlamentar
 '''
-# Funções auxiliares
-def clean(colection, pos):
-	# Retorna uma copia, sem elementos None, da lista original
-	return [x for x in colection if x[pos] != None] 
 
-def call(func, *args, **kwargs):
-	# Chama a Função passada como parâmetro
-	return func(*args, **kwargs)
+# Funções auxiliares
+def converte_data(data_string):
+	""" Converte as data_strings em milisegundos a partir da epoch"""
+	data = time.strptime(data_string , '%Y-%m-%d')
+	data = time.mktime(data)
+	return data
 
 # Funções de Caulculos estatísticos
 # Funções Relacionadas às votações
 def assertividade_votacao(id_votacao):
-	# Calcula a assertividade de uma votação 
-	# ex:
-	# 	sim = 20, não = 31, abs = 30
-	# 	return (não/sim+não+abs)*100
+	""" Calcula a assertividade de uma votação 
+	 ex:
+	 	sim = 20, não = 31, abs = 30
+	 	return (não/sim+não+abs)*100"""
 
 	conn = sql.connect("py_politica.db")
 	cursor = conn.cursor()
@@ -84,8 +84,8 @@ def assertividade_votacao(id_votacao):
 		return (placar_max/total)*100
 
 def total_votos(id_votacao, tipo):
-	# Dado uma votacção e uma descrição (sim, não, abstenção) retorna o número de votos
-	# da descrição na votação em questão
+	""" Dado uma votacção e uma descrição (sim, não, abstenção) retorna o número de votos
+	da descrição na votação em questão"""
 	conn = sql.connect("py_politica.db")
 	cursor = conn.cursor()
 	if tipo.lower() == 's': tipo = 'Sim'
@@ -128,7 +128,7 @@ def total_votos(id_votacao, tipo):
 		return total[0]
 
 def competitividade_votacao(id_votacao, op = '/'):
-	# Dado uma votação e um operador(/.-) faz a razão ou a subtração da descrição mais votada pela segunda mais votada
+	""" Dado uma votação e um operador('/','-') faz a razão ou a subtração da descrição mais votada pela segunda mais votada """
 	conn = sql.connect("py_politica.db")
 	cursor = conn.cursor()
 	sql_command = '''
@@ -174,7 +174,7 @@ def competitividade_votacao(id_votacao, op = '/'):
 		return calculo
 	
 def entropia(id_votacao):
-	# Dada uma votação calcula a entropia dela
+	""" Dada uma votação calcula sua entropia"""
 	conn = sql.connect("py_politica.db")
 	cursor = conn.cursor()
 	sql_command = '''
@@ -207,8 +207,8 @@ def entropia(id_votacao):
 		conn.close()	
 		return st.entropy(n_votos)
 
-def votacoes_periodo(passo = 'D', data_in = DATA_INICIAL, data_fim = DATA_FIM):
-	# Retorna o número de votações numa faixa de tempo, podendo alternar o passo da contagem
+def votacoes_periodo(passo = 'D', data_in = global_keys['DATA_INICIO'], data_fim = global_keys['DATA_FIM']):
+	""" Retorna o número de votações numa faixa de tempo, podendo alternar o passo da contagem """
 	conn = sql.connect("py_politica.db")
 	cursor = conn.cursor()
 	if passo == 'D':
@@ -254,8 +254,8 @@ def votacoes_periodo(passo = 'D', data_in = DATA_INICIAL, data_fim = DATA_FIM):
 		return res
 
 # Funções relacionadas às Matérias
-def materias_periodo(passo = 'D', data_in = DATA_INICIAL, data_fim = DATA_FIM):
-	# Retorna o número de votações numa faixa de tempo, podendo alternar o passo da contagem
+def materias_periodo(passo = 'D', data_in = global_keys['DATA_INICIO'], data_fim = global_keys['DATA_FIM']):
+	""" Retorna o número de votações numa faixa de tempo, podendo alternar o passo da contagem """
 	conn = sql.connect("py_politica.db")
 	cursor = conn.cursor()
 	if passo == 'D':
@@ -265,7 +265,7 @@ def materias_periodo(passo = 'D', data_in = DATA_INICIAL, data_fim = DATA_FIM):
 		WHERE date(data_apresentacao) >= '{}' AND
 			date(data_apresentacao) <= '{}'
 		GROUP BY tmp
-		ORDER BY date(dataHoraInicio);
+		ORDER BY date(data_apresentacao);
 	'''
 		res = cursor.execute(sql_command.format(data_in,data_fim)).fetchall()
 		res = [list(x) for x in res]
@@ -301,9 +301,9 @@ def materias_periodo(passo = 'D', data_in = DATA_INICIAL, data_fim = DATA_FIM):
 		return res
 
 # Funções relacionadas aos parlamentares
-def assertividade_parlamentar(id_parlamentar, data_in = DATA_INICIAL, data_fim = DATA_FIM):
-	# Calcula a assertividade de um parlamentar em um período de tempo
-	# Assertividade é da pela quantidade de votos na descrição mais votada pelo parlamentar / total de votos do parlamentar
+def assertividade_parlamentar(id_parlamentar, data_in = global_keys['DATA_INICIO'], data_fim = global_keys['DATA_FIM']):
+	""" Calcula a assertividade de um parlamentar em um período de tempo
+	Assertividade é da pela quantidade de votos na descrição mais votada pelo parlamentar / total de votos do parlamentar"""
 	conn = sql.connect("py_politica.db")
 	cursor = conn.cursor()
 	sql_command = '''
@@ -326,8 +326,8 @@ def assertividade_parlamentar(id_parlamentar, data_in = DATA_INICIAL, data_fim =
 		conn.close()
 		return assertividade
 
-def numero_votos(id_parlamentar, data_in = DATA_INICIAL, data_fim = DATA_FIM):
-	# Calcula o Número de Votos dado uma faixa de tempo
+def numero_votos(id_parlamentar, data_in = global_keys['DATA_INICIO'], data_fim = global_keys['DATA_FIM']):
+	""" Calcula o Número de Votos dado uma faixa de tempo """
 	conn = sql.connect("py_politica.db")
 	cursor = conn.cursor()
 	sql_command = '''
@@ -350,8 +350,8 @@ def numero_votos(id_parlamentar, data_in = DATA_INICIAL, data_fim = DATA_FIM):
 	conn.close()
 	return n_votos
 
-def chinelinho(id_parlamentar, data_in = DATA_INICIAL, data_fim = DATA_FIM):
-	# Calcula uma porcentagem entre as licenças parlamentares e o total de votos
+def chinelinho(id_parlamentar, data_in = global_keys['DATA_INICIO'], data_fim = global_keys['DATA_FIM']):
+	""" Calcula uma porcentagem entre as licenças parlamentares e o total de votos """
 	conn = sql.connect("py_politica.db")
 	cursor = conn.cursor()
 	sql_command = ''' 
@@ -382,17 +382,28 @@ def chinelinho(id_parlamentar, data_in = DATA_INICIAL, data_fim = DATA_FIM):
 
 # Função de Ordenação
 def info_sort(func, sql_command, *args, **kwargs):
-	# Retorna uma lista ordenada tendo como parâmetro de ordenação uma das funções estatísticas
+	"""Retorna uma lista ordenada tendo como parâmetro de ordenação uma das funções estatísticas
+		args: data incial e data final usados na consulta 'sql_command'.
+		kwargs: parâmetros das funçoẽs estatísticas usadas no interior dessa função """
 	conn = sql.connect("py_politica.db")
 	cursor = conn.cursor()
 	ranking = list()
 	infos = cursor.execute(sql_command.format(*args)).fetchall()
 	for info in infos:
-		key = call(func, info[0], **kwargs)
+		key = func(info[0], **kwargs)
+		if key == None:
+			continue
+
 		key = [info[0], key]
 		ranking.append(key)
 
-	ranking = clean(ranking, 1)
 	ranking = sorted(ranking, key=lambda ranking: ranking[1], reverse=True)
 	conn.close()
 	return ranking
+
+def get_id(sql_command, *args):
+	conn = sql.connect("py_politica.db")
+	cursor = conn.cursor()
+	infos = cursor.execute(sql_command.format(*args)).fetchall()
+	infos = [i[0] for i in infos]
+	return infos
