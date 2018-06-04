@@ -1,4 +1,4 @@
-# Versão 1.1.2
+# Versão 1.1.3
 import sqlite3 as sql
 import scipy.stats as st
 from matplotlib import pyplot as pp
@@ -151,7 +151,7 @@ def competitividade_votacao(id_votacao, op = '/'):
 			return None
 		
 		if op == '/': calculo = int(primeiros[1][0])/int(primeiros[0][0])
-		elif op == '-': calculo = int(primeiros[1][0])-int(primeiros[0][0])
+		elif op == '-': calculo = int(primeiros[0][0])-int(primeiros[1][0])
 		conn.close()
 		return calculo
 	
@@ -191,8 +191,7 @@ def entropia(id_votacao):
 			GROUP BY descricao
 		'''
 		n_votos = cursor.execute(sql_command.format(id_votacao)).fetchall()
-		n_votos = clean(n_votos, 0)
-		n_votos = [int(a[0]) for a in n_votos]
+		n_votos = [int(a[0]) for a in n_votos if a[0] != None]
 		conn.close()	
 		return st.entropy(n_votos)
 
